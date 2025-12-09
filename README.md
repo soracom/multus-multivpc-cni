@@ -24,7 +24,7 @@ To close this gap, this repository provides a Multus delegate CNI plugin with th
   Inspired by the AWS sample project [aws-samples/eks-automated-ipmgmt-multus-pods](https://github.com/aws-samples/eks-automated-ipmgmt-multus-pods),
   this design moves all ENI lifecycle operations into a node-scoped DaemonSet (`multivpc-eni-agent`) rather than spawning per-Pod sidecar helpers.
   By centralizing AWS API interactions, it achieves more predictable rate-limit behavior, higher reliability, better auditability,
-  and unified operational visibility—while eliminating the operational overhead of Pod-level AWS components.
+  and unified operational visibility — while eliminating the operational overhead of Pod-level AWS components.
 
 - **Profile-driven network selection:**
   Define subnet and security group mappings through Helm values as reusable network profiles.
@@ -139,7 +139,7 @@ It listens on a Unix socket, queues requests (rejecting when full), and processe
 
 ### Taint Controller (Optional)
 
-Runs a simple reconcile loop that adds a “not ready for Multus” taint to nodes where the ENI agent Pod is not yet Running+Ready, and removes the taint once the agent is ready on that node.
+Runs a simple reconcile loop that adds a “not ready for Multus” taint to nodes where the ENI agent Pod is not yet Running + Ready, and removes the taint once the agent is ready on that node.
 This prevents secondary-network Pods from scheduling onto nodes that cannot yet attach secondary ENIs.
 
 - Watches agent Pods on each node and builds a ready/unready map; no AWS calls are made.
