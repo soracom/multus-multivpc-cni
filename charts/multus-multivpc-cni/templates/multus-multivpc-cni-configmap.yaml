@@ -7,7 +7,7 @@ metadata:
 data:
   networks.conf: |
     {
-      "cniVersion": "0.3.1",
+      "cniVersion": "1.1.0",
       "name": "multus-multivpc-cni",
       "type": "multus-multivpc-cni",
       "socketPath": "{{ .Values.cni.socketPath }}",

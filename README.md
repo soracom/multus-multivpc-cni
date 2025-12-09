@@ -185,7 +185,7 @@ metadata:
 spec:
   config: |
     {
-      "cniVersion": "0.3.1",
+      "cniVersion": "1.1.0",
       "name": "multus-vpc-xxxx-yyyy",
       "type": "multus-multivpc-cni",
       "delegate": {
@@ -215,7 +215,7 @@ metadata:
 spec:
   config: |
     {
-      "cniVersion": "0.3.1",
+      "cniVersion": "1.1.0",
       "name": "multus-vpc-xxxx-yyyy-static",
       "type": "multus-multivpc-cni",
       "delegate": {
