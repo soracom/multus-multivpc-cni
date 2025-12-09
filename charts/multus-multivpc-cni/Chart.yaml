@@ -1,6 +1,6 @@
 apiVersion: v2
 name: multus-multivpc-cni
-version: v0.9.0
+version: v0.9.1
 description: Multus delegate and node agent for Multi-VPC ENI attachments
-appVersion: v0.9.0
+appVersion: v0.9.1
 type: application
