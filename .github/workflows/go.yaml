@@ -1,0 +1,91 @@
+name: Go
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - .github/workflows/go.yaml
+  pull_request:
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - .github/workflows/go.yaml
+
+jobs:
+  fmt:
+    name: Format and Lint
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        id: setup-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+
+      - name: Go fmt
+        run: |
+          test -z "$(gofmt -l .)" || (gofmt -w $(gofmt -l .) && git diff --exit-code)
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          args: --timeout=5m ./...
+
+  static_check:
+    name: Static Check
+    runs-on: ubuntu-slim
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        id: setup-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+
+      - name: Run go vet
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "### go vet summary" >> "$GITHUB_STEP_SUMMARY"
+          go vet ./... 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Run staticcheck
+        uses: dominikh/staticcheck-action@v1
+        with:
+          version: latest
+
+  unit:
+    name: Unit Tests
+    runs-on: ubuntu-slim
+    needs: [fmt, static_check]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        id: setup-go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+
+      - name: Run unit tests
+        run: go test ./...

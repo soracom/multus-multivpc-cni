@@ -1,0 +1,96 @@
+name: Docker
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - charts/**
+      - Dockerfile
+      - .github/workflows/docker.yaml
+  pull_request:
+    paths:
+      - '**/*.go'
+      - go.mod
+      - go.sum
+      - charts/**
+      - Dockerfile
+      - .github/workflows/docker.yaml
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: Dockerfile
+
+  build:
+    name: Build
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          tags: multus-multivpc-cni:latest
+          load: true
+          cache-from: type=gha,scope=multus-multivpc-cni
+          cache-to: type=gha,scope=multus-multivpc-cni,mode=max
+          build-args: |
+            BUILDKIT_INLINE_CACHE=1
+
+      - name: Export image archive
+        run: |
+          docker save multus-multivpc-cni:latest | gzip -c > docker.tgz
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: build-artifacts
+          path: |
+            docker.tgz
+
+  release:
+    name: Release Docker Image
+    needs: [lint, build]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: build-artifacts
+          path: /tmp/artifacts
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Load and push image
+        run: |
+          docker load < /tmp/artifacts/docker.tgz
+          SRC_TAG=multus-multivpc-cni:latest
+          DST_TAG=ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:${{ github.ref_name }}
+          docker tag "${SRC_TAG}" "${DST_TAG}"
+          docker push "${DST_TAG}"

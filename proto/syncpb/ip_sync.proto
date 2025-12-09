@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package sync.v1;
+
+option go_package = "github.com/soracom/multus-multivpc-cni/proto/syncpb";
+
+service IpSyncService {
+  rpc ReportInterface(ReportRequest) returns (ReportResponse);
+  rpc ReleaseInterface(ReleaseRequest) returns (ReleaseResponse);
+  rpc GetStatus(GetStatusRequest) returns (GetStatusResponse);
+}
+
+message ReportRequest {
+  string node_name = 1;
+  string namespace = 2;
+  string pod_name = 3;
+  string pod_uid = 4;
+  string container_id = 5;
+  string interface_name = 6;
+  string network_profile = 7;
+  repeated string ipv4_addresses = 8;
+  repeated string ipv6_addresses = 9;
+  string mac_address = 10;
+}
+
+message ReportResponse {
+  bool accepted = 1;
+  string message = 2;
+  string eni_id = 3;
+  string attachment_id = 4;
+  string mac_address = 5;
+}
+
+message ReleaseRequest {
+  string node_name = 1;
+  string namespace = 2;
+  string pod_name = 3;
+  string pod_uid = 4;
+  string interface_name = 5;
+  string network_profile = 6;
+}
+
+message ReleaseResponse {
+  bool accepted = 1;
+  string message = 2;
+}
+
+message GetStatusRequest {
+  string pod_uid = 1;
+  string interface_name = 2;
+  string network_profile = 3;
+}
+
+message GetStatusResponse {
+  repeated InterfaceState interfaces = 1;
+  repeated string warnings = 2;
+}
+
+message InterfaceState {
+  string pod_uid = 1;
+  string pod_name = 2;
+  string namespace = 3;
+  string network_profile = 4;
+  string eni_id = 5;
+  repeated string ipv4_addresses = 6;
+  repeated string ipv6_addresses = 7;
+  string status = 8;
+  string interface_name = 9;
+  string mac_address = 10;
+}

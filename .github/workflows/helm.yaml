@@ -1,0 +1,54 @@
+name: Helm
+
+on:
+  push:
+    branches: [ main ]
+    tags:
+      - 'v*'
+    paths:
+      - charts/**
+      - .github/workflows/helm.yaml
+  pull_request:
+    paths:
+      - charts/**
+      - .github/workflows/helm.yaml
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: Helm Lint
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v4
+      - name: Helm lint
+        run: |
+          helm lint charts/multus-multivpc-cni
+
+  release:
+    name: Release Helm Chart
+    needs: lint
+    runs-on: ubuntu-slim
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: azure/setup-helm@v4
+
+      - name: Authenticate to GHCR
+        env:
+          HELM_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          helm registry login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin <<< "${HELM_PASSWORD}"
+
+      - name: Package chart
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          helm package charts/multus-multivpc-cni --version "$TAG" --app-version "$TAG"
+
+      - name: Push chart
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          helm push "multus-multivpc-cni-${TAG}.tgz" "oci://ghcr.io/${{ github.repository_owner }}/charts"

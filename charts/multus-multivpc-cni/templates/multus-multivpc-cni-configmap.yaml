@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: multus-multivpc-cni
+  labels:
+    app.kubernetes.io/name: multus-multivpc-cni
+data:
+  networks.conf: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "multus-multivpc-cni",
+      "type": "multus-multivpc-cni",
+      "socketPath": "{{ .Values.cni.socketPath }}",
+      "cacheDir": "{{ .Values.cni.cacheDir }}",
+      "networkProfileAnnotation": "{{ .Values.cni.networkProfileAnnotation }}",
+{{- if .Values.cni.networkProfileArg }}
+      "networkProfileArg": "{{ .Values.cni.networkProfileArg }}",
+{{- end }}
+{{- if .Values.cni.networkProfileDefault }}
+      "networkProfileDefault": "{{ .Values.cni.networkProfileDefault }}",
+{{- end }}
+      "delegate": {{ toJson .Values.cni.delegate }},
+      "postDelegates": {{ toJson .Values.cni.postDelegates }},
+      "waitTimeoutSeconds": {{ .Values.cni.waitTimeoutSeconds }},
+      "pollIntervalMilliseconds": {{ .Values.cni.pollIntervalMilliseconds }},
+      "runtimeConfig": {
+        "annotations": {{ toJson .Values.cni.nadSelector }}
+      }
+    }

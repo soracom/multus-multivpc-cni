@@ -1,0 +1,95 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: multivpc-eni-agent
+  labels:
+    app.kubernetes.io/name: multus-multivpc-cni
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: multus-multivpc-cni
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: multus-multivpc-cni
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      serviceAccountName: multivpc-eni-agent
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      {{- with .Values.nodeAgent.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+      {{- end }}
+      initContainers:
+        - name: install-multivpc-cni
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -euo pipefail
+              install -m 0755 /usr/local/bin/multus-multivpc-cni "/host{{ .Values.cni.binDir }}/multus-multivpc-cni"
+              install -m 0644 /config/networks.conf "/host{{ .Values.cni.confDir }}/{{ .Values.cni.confFileName }}"
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: cni-bin
+              mountPath: /host{{ .Values.cni.binDir }}
+            - name: cni-conf
+              mountPath: /host{{ .Values.cni.confDir }}
+            - name: multus-multivpc-config
+              mountPath: /config
+      containers:
+        - name: agent
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command:
+            - /usr/local/bin/multivpc-eni-agent
+          args:
+            - --metrics-address=:{{ .Values.nodeAgent.metricsPort }}
+            - --queue-size={{ .Values.nodeAgent.queueSize }}
+            - --network-profiles=/etc/multivpc/network-profiles.yaml
+            - --grpc-socket={{ .Values.cni.socketPath }}
+          env:
+            - name: AWS_REGION
+              value: {{ .Values.aws.region | quote }}
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          ports:
+            - name: metrics
+              containerPort: {{ .Values.nodeAgent.metricsPort }}
+          {{- with .Values.nodeAgent.resources }}
+          resources:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          volumeMounts:
+            - name: multivpc-config
+              mountPath: /etc/multivpc
+            - name: multivpc-run
+              mountPath: /run
+      volumes:
+        - name: multivpc-config
+          configMap:
+            name: multivpc-eni-agent
+        - name: multus-multivpc-config
+          configMap:
+            name: multus-multivpc-cni
+        - name: multivpc-run
+          hostPath:
+            path: /run
+            type: DirectoryOrCreate
+        - name: cni-bin
+          hostPath:
+            path: {{ .Values.cni.binDir }}
+            type: DirectoryOrCreate
+        - name: cni-conf
+          hostPath:
+            path: {{ .Values.cni.confDir }}
+            type: DirectoryOrCreate

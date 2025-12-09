@@ -1,0 +1,82 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard"
+  ],
+  "enabledManagers": [
+    "gomod",
+    "dockerfile",
+    "github-actions"
+  ],
+  "labels": [
+    "dependencies",
+    "renovate"
+  ],
+  "platformAutomerge": true,
+  "prConcurrentLimit": 3,
+  "packageRules": [
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "gomod-dependencies",
+      "groupSlug": "gomod-dependencies",
+      "separateMinorPatch": true,
+      "schedule": [
+        "before 4am on monday"
+      ]
+    },
+    {
+      "description": "Allow automatic merge for Go minor and patch-level bumps",
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "gomod-dependencies",
+      "groupSlug": "gomod-dependencies",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "schedule": [
+        "before 4am on monday"
+      ]
+    },
+    {
+      "description": "Automatically manage Docker base images",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "groupName": "dockerfile-dependencies",
+      "groupSlug": "dockerfile-dependencies",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "schedule": [
+        "before 4am on monday"
+      ]
+    },
+    {
+      "description": "Keep GitHub Actions up to date",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "github-actions-workflows",
+      "groupSlug": "github-actions-workflows",
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
+      "automerge": true,
+      "automergeType": "pr",
+      "schedule": [
+        "before 4am on monday"
+      ]
+    }
+  ]
+}
