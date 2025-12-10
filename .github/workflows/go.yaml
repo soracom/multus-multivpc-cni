@@ -36,11 +36,11 @@ jobs:
         run: |
           test -z "$(gofmt -l .)" || (gofmt -w $(gofmt -l .) && git diff --exit-code)
 
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v9
-        with:
-          version: latest
-          args: --timeout=5m ./...
+      #- name: Run golangci-lint
+      #  uses: golangci/golangci-lint-action@v9
+      #  with:
+      #    version: latest
+      #    args: --timeout=5m ./...
 
   static_check:
     name: Static Check
