@@ -15,7 +15,7 @@ RUN GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -o /out/multivpc-eni-agen
  && GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -o /out/multus-multivpc-cni ./cmd/multus-multivpc-cni \
  && GOOS="${TARGETOS}" GOARCH="${TARGETARCH}" go build -o /out/multivpc-taint-controller ./cmd/multivpc-taint-controller
 
-FROM alpine:3.20
+FROM alpine:3.23
 
 # hadolint ignore=DL3018
 RUN apk add --no-cache ca-certificates iproute2 ethtool \
