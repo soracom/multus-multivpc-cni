@@ -9,17 +9,19 @@ aws:
   region: ap-northeast-1  # AWS region for the ENI agent to call EC2/IMDS
 
 nodeAgent:
-  iamRoleArn: ""           # Attach an IAM role to the DaemonSet Pod via IRSA (optional)
-  resources: {}            # CPU/memory requests and limits for the agent container
-  tolerations: []          # Pod tolerations so the agent can land on tainted nodes
-  metricsPort: 9090        # Prometheus metrics port exposed by the agent
-  queueSize: 128           # Max queued gRPC requests before returning accepted=false
+  iamRoleArn: ""               # Attach an IAM role to the DaemonSet Pod via IRSA (optional)
+  resources: {}                # CPU/memory requests and limits for the agent container
+  tolerations: []              # Pod tolerations so the agent can land on tainted nodes
+  nodeSelector:
+    kubernetes.io/arch: amd64  # Agent image is amd64-only as of Dec 2025
+  metricsPort: 9090            # Prometheus metrics port exposed by the agent
+  queueSize: 128               # Max queued gRPC requests before returning accepted=false
   queue:
     retry:
-      maxAttempts: 5       # Reserved for future retry/backoff tuning
+      maxAttempts: 5           # Reserved for future retry/backoff tuning
     backoff:
-      initialDuration: 1s  # Reserved for future retry/backoff tuning
-      maxDuration: 30s     # Reserved for future retry/backoff tuning
+      initialDuration: 1s      # Reserved for future retry/backoff tuning
+      maxDuration: 30s         # Reserved for future retry/backoff tuning
 
 networkProfiles: {}  # Map of logical profile name -> {subnetId, securityGroupIds, description, preferredEniCount}
 

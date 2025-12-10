@@ -24,6 +24,10 @@ spec:
       tolerations:
 {{ toYaml . | indent 8 }}
       {{- end }}
+      {{- with .Values.nodeAgent.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+      {{- end }}
       initContainers:
         - name: install-multivpc-cni
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
