@@ -59,7 +59,7 @@ jobs:
           docker save multus-multivpc-cni:latest | gzip -c > docker.tgz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: |
@@ -75,7 +75,7 @@ jobs:
       packages: write
     steps:
       - name: Download build artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: build-artifacts
           path: /tmp/artifacts
