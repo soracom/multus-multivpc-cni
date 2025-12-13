@@ -33,9 +33,18 @@ jobs:
           dockerfile: Dockerfile
 
   build:
-    name: Build
+    name: Build (${{ matrix.arch }})
     needs: lint
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -43,31 +52,29 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
+      - name: Build Docker image (linux/${{ matrix.arch }})
         uses: docker/build-push-action@v6
         with:
           context: .
-          tags: multus-multivpc-cni:latest
+          tags: ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:build-${{ matrix.arch }}
           load: true
-          cache-from: type=gha,scope=multus-multivpc-cni
-          cache-to: type=gha,scope=multus-multivpc-cni,mode=max
-          build-args: |
-            BUILDKIT_INLINE_CACHE=1
+          platforms: linux/${{ matrix.arch }}
+          cache-from: type=gha,scope=multus-multivpc-cni-${{ matrix.arch }}
+          cache-to: type=gha,scope=multus-multivpc-cni-${{ matrix.arch }},mode=max
 
       - name: Export image archive
         run: |
-          docker save multus-multivpc-cni:latest | gzip -c > docker.tgz
+          docker save ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:build-${{ matrix.arch }} | gzip -c > docker-${{ matrix.arch }}.tgz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v4
         with:
-          name: build-artifacts
-          path: |
-            docker.tgz
+          name: image-${{ matrix.arch }}
+          path: docker-${{ matrix.arch }}.tgz
 
   release:
     name: Release
-    needs: lint
+    needs: [lint, build]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
@@ -76,9 +83,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -93,14 +97,28 @@ jobs:
       - name: Derive version without v-prefix
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
-      - name: Build and push multi-arch images
-        uses: docker/build-push-action@v6
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
         with:
-          context: .
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:${{ env.VERSION }}
-            ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:latest
-          cache-from: type=gha,scope=multus-multivpc-cni
-          cache-to: type=gha,scope=multus-multivpc-cni,mode=max
+          pattern: image-*
+          merge-multiple: false
+
+      - name: Load and push arch images
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/multus-multivpc-cni"
+          for arch in amd64 arm64; do
+            tarball="image-${arch}/docker-${arch}.tgz"
+            docker load -i "${tarball}"
+            docker tag "${IMAGE}:build-${arch}" "${IMAGE}:${VERSION}-${arch}"
+            docker push "${IMAGE}:${VERSION}-${arch}"
+          done
+
+      - name: Create and push multi-arch manifest
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY_OWNER}/multus-multivpc-cni"
+          docker buildx imagetools create \
+            -t "${IMAGE}:${VERSION}" \
+            -t "${IMAGE}:latest" \
+            "${IMAGE}:${VERSION}-amd64" \
+            "${IMAGE}:${VERSION}-arm64"
