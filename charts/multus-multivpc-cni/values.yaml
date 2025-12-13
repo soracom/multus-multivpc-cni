@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/soracom/multus-multivpc-cni  # Image used for both the agent and CNI installer init container
-  tag: v0.9.1                                      # Override to pin a custom build/tag
+  tag: 0.9.3                                       # Override to pin a custom build/tag
   pullPolicy: IfNotPresent                         # Use IfNotPresent to avoid unnecessary pulls in private registries
 
 imagePullSecrets: []  # Supply secrets when pulling from a private registry
@@ -12,8 +12,7 @@ nodeAgent:
   iamRoleArn: ""               # Attach an IAM role to the DaemonSet Pod via IRSA (optional)
   resources: {}                # CPU/memory requests and limits for the agent container
   tolerations: []              # Pod tolerations so the agent can land on tainted nodes
-  nodeSelector:
-    kubernetes.io/arch: amd64  # Agent image is amd64-only as of Dec 2025
+  nodeSelector: {}             # Leave empty to run on all architectures; set to pin (e.g., kubernetes.io/arch: amd64)
   metricsPort: 9090            # Prometheus metrics port exposed by the agent
   queueSize: 128               # Max queued gRPC requests before returning accepted=false
   queue:
