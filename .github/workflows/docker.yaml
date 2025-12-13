@@ -67,18 +67,21 @@ jobs:
 
   release:
     name: Release
-    needs: [lint, build]
+    needs: lint
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Download build artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: build-artifacts
-          path: /tmp/artifacts
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -87,10 +90,17 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Load and push image
-        run: |
-          docker load < /tmp/artifacts/docker.tgz
-          SRC_TAG=multus-multivpc-cni:latest
-          DST_TAG=ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:${{ github.ref_name }}
-          docker tag "${SRC_TAG}" "${DST_TAG}"
-          docker push "${DST_TAG}"
+      - name: Derive version without v-prefix
+        run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
+
+      - name: Build and push multi-arch images
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:${{ env.VERSION }}
+            ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:latest
+          cache-from: type=gha,scope=multus-multivpc-cni
+          cache-to: type=gha,scope=multus-multivpc-cni,mode=max
