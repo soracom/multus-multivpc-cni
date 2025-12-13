@@ -167,7 +167,7 @@ Each entry maps logical names to the AWS subnet and security groups that should 
 
 2. Install/upgrade from local sources:
    ```bash
-   helm upgrade --install multus-multivpc-cni ./charts/multus-multivpc-cni -f my-values.yaml
+   helm upgrade --install multus-multivpc ./charts/multus-multivpc-cni -f my-values.yaml
    ```
 
 ### Network Attachment Definitions
