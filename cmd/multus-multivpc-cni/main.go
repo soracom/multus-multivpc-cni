@@ -518,6 +518,12 @@ func configureDelegate(conf *pluginConf, masterName string, delegate map[string]
 		out["master"] = masterName
 	}
 	out["cniVersion"] = conf.CNIVersion
+	// Propagate runtimeConfig (pod annotations, etc.) so delegates/IPAM can read them.
+	if conf != nil && conf.runtimeConfig != nil {
+		if _, ok := out["runtimeConfig"]; !ok {
+			out["runtimeConfig"] = conf.runtimeConfig
+		}
+	}
 	return out
 }
 
