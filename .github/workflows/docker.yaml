@@ -67,7 +67,7 @@ jobs:
           docker save ghcr.io/${{ github.repository_owner }}/multus-multivpc-cni:build-${{ matrix.arch }} | gzip -c > docker-${{ matrix.arch }}.tgz
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: image-${{ matrix.arch }}
           path: docker-${{ matrix.arch }}.tgz
@@ -98,7 +98,7 @@ jobs:
         run: echo "VERSION=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: image-*
           merge-multiple: false
